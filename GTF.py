@@ -44,14 +44,10 @@ def parseGTF(gtffile, seqnames=None, sources=None, features=None , not_sources=N
             continue
         gtf = GTF(*line.strip().split('\t'))
         if not gtf.seqname:
-            if gtf.attribute['gene_id'] == 'EFNB2':
-                print 'Continued because seqname == "{}"'.format(gtf.seqname)
             continue
         if add_chr:
             gtf.seqname = 'chr' + gtf.seqname
         if seqnames and gtf.seqname not in seqnames:
-            if gtf.attribute['gene_id'] == 'EFNB2':
-                print 'Continued because seqname "{}" not in "{}"'.format(gtf.seqname, seqnames)
             #print '{} not in {}'.format(gtf.seqname, seqnames)
             continue
         #attributes = {}
@@ -59,34 +55,26 @@ def parseGTF(gtffile, seqnames=None, sources=None, features=None , not_sources=N
         #    attributes[attr[0]] = attr[1][1:-1]
         #gtf.attribute = attributes
         if not_sources and gtf.source in not_sources:
-            if gtf.attribute['gene_id'] == 'EFNB2':
-                print 'Continued because source "{}" not in "{}"'.format(gtf.source, sources)
             continue
         elif not_features and gtf.feature in not_features:
-            if gtf.attribute['gene_id'] == 'EFNB2':
-                print 'Continued because feature "{}" not in "{}"'.format(gtf.feature, features)
             continue
         if sources and gtf.source not in sources:
-            if gtf.attribute['gene_id'] == 'EFNB2':
-                print 'omg' 
             continue
         elif features and gtf.feature not in features:
-            if gtf.attribute['gene_id'] == 'EFNB2':
-                print 'lol'
             continue
         results.append(gtf)
     f.close()
     return results
 
-def groupGTF(gtf):
+def groupGTF(gtf, group_by='gene_name'):
     result = {}
     for g in gtf:
         if g.seqname not in result:
-            result[g.seqname] = {g.attribute['gene_name']: [g]}
-        if g.attribute['gene_name'] not in result[g.seqname]:
-            result[g.seqname][g.attribute['gene_name']] = [g]
+            result[g.seqname] = {g.attribute[group_by]: [g]}
+        if g.attribute[group_by] not in result[g.seqname]:
+            result[g.seqname][g.attribute[group_by]] = [g]
         else:
-            result[g.seqname][g.attribute['gene_name']].append(g)
+            result[g.seqname][g.attribute[group_by]].append(g)
     for chrom in result:
         for gene in result[chrom]:
             result[chrom][gene].sort(key=lambda x: x.start)
@@ -113,6 +101,8 @@ def mergeTwoGTFs(g1, g2, delim='|'):
         res.score = float(g1.score) + g2.score / 2
     except TypeError:
         res.score = None
+    # Below is the extremely lazy and improper way to merge
+    # these attributes. Will implement in future if possible
     res.strand = g1.strand
     res.frame = g1.frame
     res.attribute = g1.attribute
